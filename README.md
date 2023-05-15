@@ -5,7 +5,7 @@ Visual Studio Code
 
 python 3.8.2
 # Executable & Compiling
-To compile files: Type ' python3 -m main.py db.py query.py table.py ' into the terminal
+To compile files: Type ' python3 -m main.py ' into the terminal
 
 To execute files: After compiling, the program should execute.
 
@@ -34,5 +34,11 @@ Inner joins takes a comparison and merge the tables based on the id given.
 The program reads the two tables and stores each line in Table_1 and Table_2 according to its intended use. Table names, values to compare, and their operands are parsed from the command's values. Table_Join, a new list, is made. A nested for-loop used by the join function compares the provided values from the command while iterating through both tables. These columns are not joined from either table if there is no correspondence for the given value. If the program notices there were no matches discovered for a value from Table_1, it will still insert that record with null information for Table_2's corresponding value. Left outer joins function precisely the same as inner joins.
 
 
-The SQL file commands are slightly altered to make copying and pasting easier. The command .exit does not work as I only implemented .EXIT to function (fully capitalized).
-Another thing to note is that my program has only been able to excute on Mac OS. I have not been able to execute the program on windows since project 2's development. 
+The SQL file commands are slightly altered to make copying and pasting easier. The command .exit does not work as I only implemented .EXIT to function (fully capitalized). The table term "flights" was changed to "Flights". Needed to change f to uppercase F in order for the update command to properly execute since there are two different terms being called.
+Another thing to note is that my program has only been able to excute on Mac OS. I have not been able to execute the program on windows since project 2's development.
+
+
+With the implementation of project 4, transactions, I added a multi-step process that defaults to no locks. The program first checks if any file locks has been made and if it has, the lock is set to 'true'. If the user creates these locks for the transaction than the flag is set to 'false'. Transactions cannot occur with any prior modification to tables. If transactions is in progress, any alterations made on the tables will be stores separately in a new txt file. 
+
+When a transaction begins, the program checks if any locks are created. If there are no locks, then a lock is created for every table in the database and the locks created by the user ("userMadeLocks") is set to 'true'. If the flag is true, then the commit command will occur. Otherwise, it will abort if no locks are created. 
+
