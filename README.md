@@ -1,4 +1,4 @@
-# CS-457 Programming Assignment 3: Table Joins
+# CS-457 Programming Assignment 4: Transactions
 # Build Environment
 Mac OS
 Visual Studio Code
