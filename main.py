@@ -1,8 +1,9 @@
 # Andy Chiang
-# database Project 2
+# database Project 4
 # Main driver file
 
 import os
+import sys
 
 import db
 import table
@@ -10,12 +11,20 @@ import query
 import join
 
 currDB = None
-UserQuery = None
+UserQuery = ""
 TableList = [None]
+CommandsToExecuteOnCommit = []
+BreakFlag = 0
+isLocked = 1
 
-while (UserQuery != ".EXIT"):
-  UserQuery = input(">> ")
-  if (';' not in UserQuery and UserQuery != ".EXIT"): # Invalid command
+userMadeLock = 0
+
+def commandProcessing():
+  global currDB
+  global userMadeLock
+  global isLocked
+
+  if (';' not in UserQuery and UserQuery.upper() != ".EXIT"): # Invalid command
     print("Commands must end with ';'")
   
   # Creates database
@@ -73,8 +82,14 @@ while (UserQuery != ".EXIT"):
     tbName = db.inputCleaner("DROP TABLE ", UserQuery)
     if (currDB != None):
       if db.tableCheck(tbName, currDB):
-        os.system(f'rm {currDB}/{tbName}.txt')
-        print(f"Table {tbName} deleted from database {currDB}.")
+        if isLocked == 0:
+          if userMadeLock:
+            CommandsToExecuteOnCommit.append(f'rm {currDB}/{tbName}.txt')
+          else:
+            os.system(f'rm {currDB}/{tbName}.txt')
+          print(f"Table {tbName} deleted from database {currDB}.")
+        else:
+          print(f"Error: Table {tbName} is locked!")
       else:
         print(f"!Failed to delete {tbName} because it does not exist.")
     else:
@@ -101,25 +116,61 @@ while (UserQuery != ".EXIT"):
 
     if currDB != None:
       if db.tableCheck(tbName, currDB):
-        f = open(f'{currDB}/{tbName}.txt', 'a')
-        f.write(f" | {newAttr}") # Appends attribute to file with pipe delimiter
-        f.close()
-        print(f"Table {tbName} modified.")
+        if isLocked == 0:
+          f = open(f'{currDB}/{tbName}.txt', 'a')
+          f.write(f" | {newAttr}") # Appends attribute to file with pipe delimiter
+          f.close()
+          print(f"Table {tbName} modified.")
+        else:
+          print(f"Error: Table {tbName} is locked!")
       else:
         print(f"!Failed to modify table {tbName} because it does not exist.")
     else:
       print("Please select database to use.")
   
   elif ("INSERT INTO" in UserQuery.upper()):
-    table.insertTuple(UserQuery, currDB)
+    table.insertTuple(UserQuery, currDB, isLocked, userMadeLock, CommandsToExecuteOnCommit)
   
   elif ("UPDATE" in UserQuery.upper()):
-    table.updateTuple(UserQuery, currDB)
+    table.updateTuple(UserQuery, currDB, isLocked, userMadeLock, CommandsToExecuteOnCommit)
   
   elif ("DELETE FROM" in UserQuery.upper()):
-    table.deleteTuple(UserQuery, currDB)
+    table.deleteTuple(UserQuery, currDB, isLocked, userMadeLock, CommandsToExecuteOnCommit)
+
+  elif ("BEGIN TRANSACTION" in UserQuery.upper()):
+    userMadeLock = db.makeLock(currDB)
+    print("Transaction start.")
+  
+  elif ("COMMIT" in UserQuery.upper()):
+    if userMadeLock:
+      db.releaseLock(currDB, CommandsToExecuteOnCommit)
+      print("Transaction committed.")
+    else:
+      print("Transaction aborted.")
+    userMadeLock = 0
   
   elif (".EXIT" != UserQuery):
-    print("I don't know what you want me to do.")
+    print("Please input valid commands.")
+  
+try:
+  inputFile = open(sys.argv[1])
+  for cmd in inputFile:
+    if (BreakFlag == 1):
+      inputFile.close()
+      quit()
+    elif ("--" not in cmd):
+      if (".EXIT" not in cmd.upper()):
+        if userMadeLock == 0:
+          isLocked = db.checkLock(currDB) if (currDB != None) else 1
+        UserQuery = cmd.rstrip('\n')
+        commandProcessing()
+      else:
+        BreakFlag = 1
+except IndexError:
+  while (UserQuery.upper() != ".EXIT"):
+    if userMadeLock == 0:
+      isLocked = db.checkLock(currDB) if (currDB != None) else 1
+    UserQuery = input(">> ")
+    commandProcessing()
 
 quit()

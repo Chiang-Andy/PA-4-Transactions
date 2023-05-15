@@ -31,3 +31,24 @@ def getOperand(o):
   elif (o == '!='):
     operand = -3
   return operand
+
+def makeLock(currDB):
+  if checkLock(currDB):
+    return 0
+  else:
+    tablesToLock = subprocess.run(['ls', currDB, '|', 'grep ".txt"'], capture_output=True, text=True).stdout.split()
+    tablesToLock.pop(0)
+    for name in tablesToLock:
+      os.system(f"touch {currDB}/{name}.lock")
+    return 1
+
+def checkLock(currDB):
+  if ".lock" in subprocess.run(['ls', currDB, '|', 'grep ".lock"'], capture_output=True, text=True).stdout:
+    return 1
+  else:
+    return 0
+
+def releaseLock(currDB, c):
+  for cmd in c:
+    os.system(cmd)
+  os.system(f"rm {currDB}/*.lock")
